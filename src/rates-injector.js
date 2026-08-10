@@ -28,8 +28,8 @@ async function fetchPlaceholders(backend) {
   const { data } = await res.json();
   return Object.fromEntries(
     data
-      .filter((row) => row.Key && row.Text)
-      .map((row) => [toClassName(row.Key), row.Text]),
+      .filter((row) => row.Key && row.Value)
+      .map((row) => [toClassName(row.Key), row.Value]),
   );
 }
 
