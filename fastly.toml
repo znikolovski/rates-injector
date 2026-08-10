@@ -15,8 +15,8 @@ service_id = ""
 
 [local_server]
   [local_server.backends]
-    [local_server.backends.open-meteo]
-      url = "https://api.open-meteo.com"
+    [local_server.backends.eds-content]
+      url = "https://main--kynetic-trust--znikolovski.aem.live"
 
   [local_server.config_stores]
     [local_server.config_stores.config_default]
