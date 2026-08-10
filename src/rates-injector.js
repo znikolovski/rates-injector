@@ -12,19 +12,18 @@ governing permissions and limitations under the License.
 
 /// <reference types="@fastly/js-compute" />
 
-const EDS_BACKEND = 'eds-content';
-const EDS_ORIGIN = 'https://main--kynetic-trust--znikolovski.aem.live';
+import { Backend } from 'fastly:backend';
+
+const EDS_HOST = 'main--kynetic-trust--znikolovski.aem.live';
+const EDS_ORIGIN = `https://${EDS_HOST}`;
 
 // Mirrors aem.js toClassName() so placeholder keys resolve identically on both sides.
 function toClassName(name) {
   return name.toLowerCase().replace(/[^0-9a-z]/gi, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
 
-async function fetchPlaceholders() {
-  const res = await fetch(
-    new Request(`${EDS_ORIGIN}/placeholders.json`),
-    { backend: EDS_BACKEND },
-  );
+async function fetchPlaceholders(backend) {
+  const res = await fetch(`${EDS_ORIGIN}/placeholders.json`, { backend });
   if (!res.ok) return {};
   const { data } = await res.json();
   return Object.fromEntries(
@@ -35,14 +34,20 @@ async function fetchPlaceholders() {
 }
 
 async function ratesInjectorHandler(req) {
-  // Rewrite host to EDS origin so the backend receives the correct Host header.
-  const url = new URL(req.url);
-  const backendReq = new Request(
-    `${EDS_ORIGIN}${url.pathname}${url.search}`,
-    { method: req.method, headers: req.headers },
-  );
+  // Backend must be created inside the request handler, not at module init time.
+  const backend = new Backend({
+    name: 'eds-content',
+    target: EDS_HOST,
+    hostOverride: EDS_HOST,
+    useSSL: true,
+    sslSniHostname: EDS_HOST,
+  });
 
-  const pageRes = await fetch(backendReq, { backend: EDS_BACKEND });
+  const url = new URL(req.url);
+  const pageRes = await fetch(
+    `${EDS_ORIGIN}${url.pathname}${url.search}`,
+    { method: req.method, headers: req.headers, backend },
+  );
 
   const contentType = pageRes.headers.get('content-type') ?? '';
   if (!contentType.includes('text/html')) {
@@ -51,7 +56,7 @@ async function ratesInjectorHandler(req) {
 
   let map = {};
   try {
-    map = await fetchPlaceholders();
+    map = await fetchPlaceholders(backend);
   } catch (e) {
     console.warn('Placeholder fetch failed, serving page unmodified:', e.message);
     return pageRes;

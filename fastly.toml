@@ -14,9 +14,6 @@ service_id = ""
   post_init = "npm install"
 
 [local_server]
-  [local_server.backends]
-    [local_server.backends.eds-content]
-      url = "https://main--kynetic-trust--znikolovski.aem.live"
 
   [local_server.config_stores]
     [local_server.config_stores.config_default]
