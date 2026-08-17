@@ -55,10 +55,13 @@ async function gqlPost(query, aemBackend) {
       body: JSON.stringify({ query }),
       backend: aemBackend,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`gqlPost HTTP ${res.status} from ${AEM_GQL_ENDPOINT}`);
+      return null;
+    }
     return res.json();
   } catch (e) {
-    console.warn('gqlPost failed:', e.message);
+    console.error(`gqlPost fetch failed: ${e?.name} — ${e?.message}`);
     return null;
   }
 }
@@ -83,18 +86,19 @@ async function fetchCardDetail(slug, aemBackend) {
   try {
     // AEM persisted query format uses semicolon-delimited params with literal path values.
     const path = `/content/dam/securbank/en/cards/${slug}`;
-    const res = await fetch(
-      `${AEM_GQL_PERSISTED}/CreditCardDetailsByPath;path=${path}`,
-      {
-        headers: { Accept: 'application/json', 'accept-encoding': 'identity' },
-        backend: aemBackend,
-      },
-    );
-    if (!res.ok) return null;
+    const url = `${AEM_GQL_PERSISTED}/CreditCardDetailsByPath;path=${path}`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', 'accept-encoding': 'identity' },
+      backend: aemBackend,
+    });
+    if (!res.ok) {
+      console.error(`fetchCardDetail HTTP ${res.status} for ${slug}`);
+      return null;
+    }
     const json = await res.json();
     return json?.data?.creditCardByPath?.item ?? null;
   } catch (e) {
-    console.warn('fetchCardDetail failed:', e.message);
+    console.error(`fetchCardDetail fetch failed: ${e?.name} — ${e?.message}`);
     return null;
   }
 }
